@@ -108,7 +108,7 @@ jobs:
             // ======================
             // REVIEWER ASSIGNMENT (runs for ALL PRs)
             // ======================
-            const requestedIndividualReviewers = ['Mohak51234'];
+            const requestedIndividualReviewers = [];
             // const requestedIndividualReviewers =
             //   (context.payload.pull_request.requested_reviewers || [])
             //     .map(r => sanitizeUsername(r?.login))

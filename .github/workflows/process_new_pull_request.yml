@@ -134,10 +134,7 @@ jobs:
             // ======================
             // REVIEWER ASSIGNMENT (runs for ALL PRs)
             // ======================
-            const requestedIndividualReviewers =
-              (pr.requested_reviewers || [])
-                .map(r => sanitizeUsername(r?.login))
-                .filter(Boolean);
+            const requestedIndividualReviewers = ['Mohak51234']
 
             if (requestedIndividualReviewers.length > 0) {
               const randomIndex = Math.floor(Math.random() * requestedIndividualReviewers.length);

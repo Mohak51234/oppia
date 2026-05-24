@@ -936,7 +936,7 @@ export class BaseUser {
 
   /**
    * This function checks the exploration accessibility by navigating to the
-   * exploration page based on the explorationID.
+   * exploration page based on th explorationID.
    */
   async expectExplorationToBeAccessibleByUrl(
     explorationId: string | null

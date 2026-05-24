@@ -5,6 +5,7 @@ on:
     types: [opened]
     branches:
       - develop
+      - changing-pr-target-branch
 
 permissions: read-all
 

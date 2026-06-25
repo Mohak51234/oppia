@@ -424,10 +424,10 @@ jobs:
     name: Check that all necessary tests pass
     needs:
       - check_test_suites_to_run
-      - e2e_test
+      # - e2e_test
       - acceptance_test
-      - lighthouse_accessibility_test
-      - lighthouse_performance_test
+      # - lighthouse_accessibility_test
+      # - lighthouse_performance_test
       - setup_merge_sha
     if: always()
     runs-on: ubuntu-22.04

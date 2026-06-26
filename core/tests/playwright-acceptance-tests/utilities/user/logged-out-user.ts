@@ -314,7 +314,10 @@ export class LoggedOutUser extends BaseUser {
       el => el.textContent
     );
     try {
-      await this.page.waitForSelector(nextCardButton, {timeout: 7000});
+      await this.page.waitForSelector(nextCardButton, {
+        state: 'hidden',
+        timeout: 7000,
+      });
       await this.clickOnElementWithSelector(nextCardButton);
     } catch (error) {
       if (error instanceof Error && error.message.includes('Timeout')) {

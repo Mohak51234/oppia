@@ -86,7 +86,8 @@ jobs:
         uses: ./.github/actions/merge-develop-and-set-up-dependencies
         with:
           merge_sha: ${{ needs.setup_merge_sha.outputs.develop_sha }}
-      - name: Generate build files
+      - name: Generate production build files
+        if: matrix.env-mode == 'prod'
         uses: ./.github/actions/generate-build-files
       - name: Generate modified suite name for artifacts
         id: generate_suite_name_for_artifacts

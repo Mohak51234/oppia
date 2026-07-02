@@ -48,7 +48,7 @@ runs:
         VIDEO_RECORDING_IS_ENABLED=${{ inputs.enable-screen-recording && '1' || '0' }}
         xvfb-run -a --server-args="-screen 0, 1920x1080x24"
         python -m scripts.run_acceptance_tests
-        --skip_build
+        ${{ inputs.prod-env != 'false' && '--skip_build' || '' }}
         --suite=${{ inputs.test-suite }}
         ${{ inputs.viewport-type == 'mobile' && '--mobile' || '' }}
         ${{ inputs.prod-env != 'false' && '--prod_env' || '' }}

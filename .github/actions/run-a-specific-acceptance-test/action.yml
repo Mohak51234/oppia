@@ -12,6 +12,10 @@ inputs:
     options:
       - mobile
       - desktop
+  prod-env:
+    description: "Whether to run in prod mode (adds --prod_env)."
+    required: false
+    default: "true"
   enable-screen-recording:
     description: Whether to record the screen during the test.
     required: true
@@ -42,7 +46,7 @@ runs:
         --skip_build
         --suite=${{ inputs.test-suite }}
         ${{ inputs.viewport-type == 'mobile' && '--mobile' || '' }}
-        --prod_env
+        ${{ inputs.prod-env != 'false' && '--prod_env' || '' }}
         --server_log_level=info
         | tee acceptance_test_${{ inputs.modified-suite-name-for-uploads || '' }}.log
 

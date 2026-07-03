@@ -1,8 +1,9 @@
 # This workflow regenerates Playwright acceptance-test screenshot baselines
 # for all Playwright acceptance test suites.
 #
-# Each suite is executed once for both desktop and mobile viewports, and the
-# regenerated prod-{viewport}-screenshots folders are uploaded as workflow
+# Each suite is executed once for every combination of dev/prod environment
+# mode and desktop/mobile viewport, and the regenerated
+# {env-mode}-{viewport}-screenshots folders are uploaded as workflow
 # artifacts for review.
 
 name: Update Snapshots (Playwright Acceptance Tests)
@@ -29,9 +30,12 @@ jobs:
           echo "sha=$SHA" >> "$GITHUB_OUTPUT"
 
   build:
-    name: Build the app, and store build files as an artifact
+    name: Build the app (${{ matrix.env-mode }}), and store build files as an artifact
     needs: setup_merge_sha
     runs-on: ubuntu-22.04
+    strategy:
+      matrix:
+        env-mode: [dev, prod]
     steps:
       - name: Checkout repository so that local actions can be used
         uses: actions/checkout@v4
@@ -41,6 +45,8 @@ jobs:
           merge_sha: ${{ needs.setup_merge_sha.outputs.develop_sha }}
       - name: Generate build files
         uses: ./.github/actions/generate-build-files
+        with:
+          prod-env: ${{ matrix.env-mode == 'prod' }}
 
   check_test_suites_to_run:
     name: Compute which tests to run
@@ -68,7 +74,7 @@ jobs:
         suite: ${{ fromJson(needs.check_test_suites_to_run.outputs.TEST_SUITES_TO_RUN).acceptance_playwright.suites }}
         viewport-type: [desktop, mobile]
         env-mode: [dev, prod]
-    name: "[[${{ matrix.env-mode }}/${{ matrix.viewport-type == 'mobile' && 'Mob' || 'Desk'}}] ${{ matrix.suite.name }}"
+    name: "[${{ matrix.env-mode == 'prod' && 'Prod' || 'Dev' }}/${{ matrix.viewport-type == 'mobile' && 'Mob' || 'Desk'}}] ${{ matrix.suite.name }}"
     env:
       TEST_SUITE: ${{ matrix.suite.name }}
     steps:
@@ -86,14 +92,15 @@ jobs:
         uses: ./.github/actions/merge-develop-and-set-up-dependencies
         with:
           merge_sha: ${{ needs.setup_merge_sha.outputs.develop_sha }}
-      - name: Generate production build files
-        if: matrix.env-mode == 'prod'
+      - name: Generate build files
         uses: ./.github/actions/generate-build-files
+        with:
+          prod-env: ${{ matrix.env-mode == 'prod' }}
       - name: Generate modified suite name for artifacts
         id: generate_suite_name_for_artifacts
         # Replace slashes in the filename with underscores.
         run: |
-          SUITE_NAME=$TEST_SUITE-${{ matrix.viewport-type }}
+          SUITE_NAME=$TEST_SUITE-${{ matrix.env-mode }}-${{ matrix.viewport-type }}
           echo "MODIFIED_SUITE_NAME=${SUITE_NAME//\//_}" >> $GITHUB_OUTPUT
           # The screenshots folder lives at the spec-file-directory level
           # (e.g. specs/logged-in-learner/prod-desktop-screenshots/), not
@@ -109,7 +116,7 @@ jobs:
           update-snapshots: true
           enable-screen-recording: false
           modified-suite-name-for-uploads: ${{ steps.generate_suite_name_for_artifacts.outputs.MODIFIED_SUITE_NAME }}
-      - name: Upload all snapshots in the prod-${{ matrix.viewport-type }}-screenshots folder for review
+      - name: Upload all snapshots in the ${{ matrix.env-mode }}-${{ matrix.viewport-type }}-screenshots folder for review
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v4
         with:

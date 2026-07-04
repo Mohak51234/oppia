@@ -83,11 +83,7 @@ jobs:
     runs-on: ubuntu-22.04
     strategy:
       matrix:
-        suite: ${{
-          github.event.inputs.run-mode == 'single'
-          && fromJson(format('[{{"name":"{0}"}}]', github.event.inputs.test-suite))
-          || fromJson(needs.check_test_suites_to_run.outputs.TEST_SUITES_TO_RUN).acceptance_playwright.suites
-        }}
+        suite: ${{ github.event.inputs.run-mode == 'single' && fromJson(format('[{{"name":"{0}"}}]', github.event.inputs.test-suite)) || fromJson(needs.check_test_suites_to_run.outputs.TEST_SUITES_TO_RUN).acceptance_playwright.suites }}
     name: "[${{ github.event.inputs.env-mode == 'prod' && 'Prod' || 'Dev' }}] ${{ matrix.suite.name }}"
     env:
       TEST_SUITE: ${{ matrix.suite.name }}

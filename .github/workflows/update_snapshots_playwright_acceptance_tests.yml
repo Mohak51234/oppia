@@ -170,7 +170,7 @@ jobs:
                 CHANGED_COUNT=$((CHANGED_COUNT + 1))
                 ;;
             esac
-          done < <(git status --porcelain -z --untracked-files=all -- 'specs/')
+          done < <(git status --porcelain -z --untracked-files=all -- 'core/tests/playwright-acceptance-tests/specs/')
 
           echo "Staged $CHANGED_COUNT changed/new snapshot file(s)."
           echo "STAGING_DIR=$STAGING_DIR" >> "$GITHUB_OUTPUT"

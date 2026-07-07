@@ -150,11 +150,20 @@ jobs:
           # match both modified/renamed tracked files and new untracked
           # files (update-snapshots can create brand-new baseline images).
           cd core/tests/playwright-acceptance-tests
+          echo "Current directory:"
+          pwd
+          echo "Git root:"
+          git rev-parse --show-toplevel
+
+          echo "Git status output:"
+          git status --porcelain --untracked-files=all -- 'specs/'
           CHANGED_COUNT=0
           while IFS= read -r -d '' filepath; do
+            echo "Raw filepath: '$filepath'"
             # git status --porcelain -z prefixes each entry with a 2-char
             # status code and a space; strip that to get the bare path.
             filepath="${filepath:3}"
+            echo "Stripped filepath: '$filepath'"
             case "$filepath" in
               *-screenshots/*)
                 mkdir -p "$STAGING_DIR/$(dirname "$filepath")"

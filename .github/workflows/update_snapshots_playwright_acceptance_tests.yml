@@ -163,8 +163,8 @@ jobs:
                 # at the suite directory (e.g. logged-in-learner/...) instead of
                 # the full repo path.
                 relative_path="${filepath#$SPECS_PREFIX}"
-                mkdir -p "$STAGING_DIR/$(dirname "$filepath")"
-                cp "$filepath" "$STAGING_DIR/$filepath"
+                mkdir -p "$STAGING_DIR/$(dirname "$relative_path")"
+                cp "$filepath" "$STAGING_DIR/$relative_path"
                 CHANGED_COUNT=$((CHANGED_COUNT + 1))
                 ;;
             esac

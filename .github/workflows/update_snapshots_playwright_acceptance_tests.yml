@@ -225,6 +225,6 @@ jobs:
               echo "Deleting artifact ID $artifact_id"
               gh api \
                 --method DELETE \
-                "repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts/$artifact_id" \
+                "repos/${{ github.repository }}/actions/artifacts/$artifact_id" \
                 || echo "Failed to delete artifact $artifact_id (may already be gone)."
             done

@@ -155,10 +155,14 @@ jobs:
             # git status --porcelain -z prefixes each entry with a 2-char
             # status code and a space; strip that to get the bare path.
             filepath="${filepath:3}"
-            mkdir -p "$STAGING_DIR/$(dirname "$filepath")"
-            cp "$filepath" "$STAGING_DIR/$filepath"
-            CHANGED_COUNT=$((CHANGED_COUNT + 1))
-          done < <(git status --porcelain -z --untracked-files=all -- 'specs/**/*-screenshots/')
+            case "$filepath" in
+              *-screenshots/*)
+                mkdir -p "$STAGING_DIR/$(dirname "$filepath")"
+                cp "$filepath" "$STAGING_DIR/$filepath"
+                CHANGED_COUNT=$((CHANGED_COUNT + 1))
+                ;;
+            esac
+          done < <(git status --porcelain -z --untracked-files=all -- 'specs/')
 
           echo "Staged $CHANGED_COUNT changed/new snapshot file(s)."
           echo "STAGING_DIR=$STAGING_DIR" >> "$GITHUB_OUTPUT"

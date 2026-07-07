@@ -149,7 +149,6 @@ jobs:
           # -z for NUL-separated output (safe with any filename), and we
           # match both modified/renamed tracked files and new untracked
           # files (update-snapshots can create brand-new baseline images).
-          cd core/tests/playwright-acceptance-tests
           echo "Current directory:"
           pwd
           echo "Git root:"

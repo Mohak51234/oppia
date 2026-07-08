@@ -28,8 +28,8 @@ on:
         type: string
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.run_id }}
-  cancel-in-progress: true
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
 
 jobs:
   setup_merge_sha:
@@ -148,15 +148,13 @@ jobs:
 
           SPECS_PREFIX="core/tests/playwright-acceptance-tests/specs/"
 
+          git add -A -- "$SPECS_PREFIX"
+
           # -z for NUL-separated output (safe with any filename), and we
           # match both modified/renamed tracked files and new untracked
           # files (update-snapshots can create brand-new baseline images).
           CHANGED_COUNT=0
           while IFS= read -r -d '' filepath; do
-            echo "Raw filepath: '$filepath'"
-            # git status --porcelain -z prefixes each entry with a 2-char
-            # status code and a space; strip that to get the bare path.
-            filepath="${filepath:3}"
             case "$filepath" in
               *-screenshots/*)
                 # Strip the leading specs/ prefix so the artifact zip is rooted
@@ -168,7 +166,7 @@ jobs:
                 CHANGED_COUNT=$((CHANGED_COUNT + 1))
                 ;;
             esac
-          done < <(git status --porcelain -z --untracked-files=all -- 'core/tests/playwright-acceptance-tests/specs/')
+          done < <(git diff --cached --name-only -z -- "$SPECS_PREFIX")
 
           echo "Staged $CHANGED_COUNT changed/new snapshot file(s)."
           echo "STAGING_DIR=$STAGING_DIR" >> "$GITHUB_OUTPUT"

@@ -198,31 +198,3 @@ jobs:
           name: updated-snapshots-all-${{ github.event.inputs.env-mode }}
           path: merged-snapshots
           if-no-files-found: warn
-
-  delete_individual_snapshot_artifacts:
-    name: Delete individual per-suite snapshot artifacts
-    needs: consolidate_snapshots
-    if: ${{ !cancelled() }}
-    runs-on: ubuntu-22.04
-    permissions:
-      actions: write
-    steps:
-      - name: Delete per-suite artifacts (keep consolidated one)
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          # List all artifacts for this run, filter to the per-suite ones
-          # (updated-snapshots_<suite>), and delete each by ID. The
-          # consolidated artifact is named updated-snapshots-all-<env-mode>,
-          # so it won't match this prefix and is left intact.
-          gh api \
-            "repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts?per_page=100" \
-            --paginate \
-            --jq '.artifacts[] | select(.name | startswith("updated-snapshots_")) | .id' \
-          | while read -r artifact_id; do
-              echo "Deleting artifact ID $artifact_id"
-              gh api \
-                --method DELETE \
-                "repos/${{ github.repository }}/actions/artifacts/$artifact_id" \
-                || echo "Failed to delete artifact $artifact_id (may already be gone)."
-            done

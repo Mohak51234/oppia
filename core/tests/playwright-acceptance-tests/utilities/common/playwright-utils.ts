@@ -813,6 +813,9 @@ export class BaseUser {
     });
 
     if (useSelector) {
+      await this.page.route('https://pencilcode.net/**', route =>
+        route.abort()
+      );
       await this.waitForElementToStabilize(selector);
       await this.clickOnElementWithSelector(selector);
     } else {

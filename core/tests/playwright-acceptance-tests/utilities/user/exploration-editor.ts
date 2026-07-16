@@ -964,8 +964,24 @@ export class ExplorationEditor extends RTEEditor {
         force: true,
       });
       await this.expectElementToBeVisible(mobileNavbarPane);
-      await this.waitForDropdownToOpen(mobileNavbarPane);
+      await this.page.evaluate(selector => {
+        const el = document.querySelector(selector);
+        if (el) {
+          (window as any).__clickFired = false;
+          el.addEventListener(
+            'click',
+            () => {
+              (window as any).__clickFired = true;
+            },
+            {capture: true}
+          );
+        }
+      }, mobileMainTabButton);
       await this.clickOnElementWithSelector(mobileMainTabButton);
+      const fired = await this.page.evaluate(
+        () => (window as any).__clickFired
+      );
+      console.log('Click listener fired:', fired);
 
       // Close dropdown if it doesn't automatically close.
       const isVisible = await this.isElementVisible(

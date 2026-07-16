@@ -157,7 +157,6 @@ export class BaseUser {
    */
   async reloadPage(): Promise<void> {
     await this.page.reload({waitUntil: 'networkidle'});
-    await this.waitForPageToFullyLoad();
   }
 
   /**

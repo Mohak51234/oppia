@@ -81,7 +81,6 @@ const mobilePublishButtonSelector = 'button.e2e-test-mobile-publish-button';
 const mobileNavbarDropdown = 'div.e2e-test-mobile-options-dropdown';
 const mobileNavbarOptions = '.navbar-mobile-options';
 const mobileOptionsButtonSelector = 'i.e2e-test-mobile-options';
-('h3.e2e-test-controls-bar-settings-container');
 
 const tagsField = '.e2e-test-chip-list-tags';
 const errorSavingExplorationModal = '.e2e-test-discard-lost-changes-button';

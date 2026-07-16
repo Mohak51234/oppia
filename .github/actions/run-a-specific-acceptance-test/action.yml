@@ -142,7 +142,7 @@ runs:
         if-no-files-found: warn
 
     - name: Upload Playwright test results
-      if: ${{ !cancelled() && steps.run-acceptance-test.outcome == 'failure' && inputs.modified-suite-name-for-uploads != '' }}
+      if: ${{ !cancelled() && inputs.modified-suite-name-for-uploads != '' }}
       uses: actions/upload-artifact@v4
       with:
         name: playwright-results_${{ inputs.modified-suite-name-for-uploads }}

@@ -991,14 +991,10 @@ export class ExplorationEditor extends RTEEditor {
    */
   async navigateToExplorationEditorFromCreatorDashboard(): Promise<void> {
     await this.expectElementToBeVisible(createExplorationButtonSelector);
-    await this.clickAndWaitForNavigation(createExplorationButtonSelector, true);
+    await this.clickOnElementWithSelector(createExplorationButtonSelector);
     await this.page.waitForURL(url => url.href.includes(`${baseUrl}/create/`), {
       timeout: 10000,
     });
-    // Puppeteer used waitForNetworkIdle here via clickAndWaitForNavigation.
-    // Without this, Angular hasn't finished bootstrapping the modal
-    // by the time dismissWelcomeModal fires.
-    await this.waitForNetworkIdle();
   }
 
   /**

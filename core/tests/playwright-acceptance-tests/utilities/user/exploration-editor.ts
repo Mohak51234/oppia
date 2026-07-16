@@ -348,7 +348,6 @@ export class ExplorationEditor extends RTEEditor {
       interactionToAdd as INTERACTION_TYPES
     );
 
-    await this.waitForNetworkIdle();
     // Use a higher timeout for math interactions as they are heavy to render.
     let tileText = interactionToAdd;
     // Wait for active tab panel fade transition to complete.
@@ -921,7 +920,6 @@ export class ExplorationEditor extends RTEEditor {
       el.scrollIntoView({block: 'center', inline: 'center'})
     );
     await this.clickOnElement(nodeBackground);
-    await this.waitForNetworkIdle();
 
     const headingName = !cardName.trimEnd().endsWith('...')
       ? cardName
@@ -964,24 +962,7 @@ export class ExplorationEditor extends RTEEditor {
         force: true,
       });
       await this.expectElementToBeVisible(mobileNavbarPane);
-      await this.page.evaluate(selector => {
-        const el = document.querySelector(selector);
-        if (el) {
-          (window as any).__clickFired = false;
-          el.addEventListener(
-            'click',
-            () => {
-              (window as any).__clickFired = true;
-            },
-            {capture: true}
-          );
-        }
-      }, mobileMainTabButton);
-      await this.clickOnElementWithSelector(mobileMainTabButton);
-      const fired = await this.page.evaluate(
-        () => (window as any).__clickFired
-      );
-      console.log('Click listener fired:', fired);
+      await this.clickWithJavaScript(mobileMainTabButton);
 
       // Close dropdown if it doesn't automatically close.
       const isVisible = await this.isElementVisible(

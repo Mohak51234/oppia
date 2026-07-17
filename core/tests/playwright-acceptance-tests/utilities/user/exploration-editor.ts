@@ -962,7 +962,7 @@ export class ExplorationEditor extends RTEEditor {
         force: true,
       });
       await this.expectElementToBeVisible(mobileNavbarPane);
-      await this.clickWithJavaScript(mobileMainTabButton);
+      await this.page.locator(mobileMainTabButton).dispatchEvent('click');
 
       // Close dropdown if it doesn't automatically close.
       const isVisible = await this.isElementVisible(

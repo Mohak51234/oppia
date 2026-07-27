@@ -410,15 +410,7 @@ export class ExplorationEditor extends BaseUser {
         await this.clickOnElementWithSelector(addNewResponseButton);
       });
     } else {
-      console.log(
-        '[DEBUG] modal-windows before click:',
-        await this.page.locator('ngb-modal-window').count()
-      );
       await this.clickOnElementWithSelector(addAnotherResponseButton);
-      console.log(
-        '[DEBUG] modal-windows after click:',
-        await this.page.locator('ngb-modal-window').count()
-      );
     }
   }
 
@@ -1251,27 +1243,9 @@ export class ExplorationEditor extends BaseUser {
         await this.typeInInputField(textInputInteractionOption, answer);
         break;
       case INTERACTION_TYPES.FRACTION_INPUT:
-        const modalCount = await this.page.locator('ngb-modal-window').count();
-        const rect = await this.page
-          .locator(intEditorField)
-          .evaluate(el => {
-            const r = el.getBoundingClientRect();
-            return {
-              top: r.top,
-              bottom: r.bottom,
-              innerHeight: window.innerHeight,
-            };
-          })
-          .catch(e => ({error: e.message}));
-        console.log(
-          '[DEBUG] modalCount:',
-          modalCount,
-          'inputRect:',
-          JSON.stringify(rect)
-        );
-        await this.expectElementToBeVisible(intEditorField);
-        await this.clearAllTextFrom(intEditorField);
-        await this.typeInInputField(intEditorField, answer);
+        const input = this.page.locator(intEditorField).last();
+        await input.waitFor({state: 'visible'});
+        await input.fill(answer);
         break;
       // Add cases for other interaction types here
       // case 'otherInteractionType':

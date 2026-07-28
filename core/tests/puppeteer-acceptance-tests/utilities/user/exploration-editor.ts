@@ -8120,6 +8120,29 @@ export class ExplorationEditor extends BaseUser {
     expectedOpenFeedback: string,
     expectedViews: string
   ): Promise<void> {
+    // --- DEBUG INSTRUMENTATION: remove once root cause is confirmed ---
+    if (!(this.page as any)._debugListenersAttached) {
+      (this.page as any)._debugListenersAttached = true;
+
+      this.page.on('console', msg => {
+        console.log('[BROWSER]', msg.text());
+      });
+
+      this.page.on('response', async response => {
+        if (response.url().includes('creatordashboardhandler/data')) {
+          try {
+            const body = await response.text();
+            console.log(
+              `[NETWORK] ${response.url()} status=${response.status()} body=${body}`
+            );
+          } catch (e) {
+            console.log(`[NETWORK] failed to read body: ${e}`);
+          }
+        }
+      });
+    }
+    // --- END DEBUG INSTRUMENTATION SETUP ---
+
     await this.waitForNetworkIdle({idleTime: 1000});
 
     await this.page.waitForSelector(explorationGridCardTitleSelector, {
@@ -8143,39 +8166,97 @@ export class ExplorationEditor extends BaseUser {
       throw new Error(`Card at index ${index} not found.`);
     }
 
-    await this.page.waitForFunction(
-      (
-        cardElement: Element,
-        ratingSelector: string,
-        feedbackSelector: string,
-        viewsSelector: string,
-        expectedRatingText: string,
-        expectedFeedbackText: string,
-        expectedViewsText: string
-      ) => {
-        const getStatisticText = (selector: string): string => {
-          return (
-            (
-              cardElement.querySelector(selector) as HTMLElement | null
-            )?.textContent?.trim() || ''
-          );
-        };
-
-        return (
-          getStatisticText(ratingSelector) === expectedRatingText &&
-          getStatisticText(feedbackSelector) === expectedFeedbackText &&
-          getStatisticText(viewsSelector) === expectedViewsText
-        );
-      },
-      {},
-      card,
-      explorationGridRatingSelector,
-      explorationGridFeedbackSelector,
-      explorationGridViewsSelector,
-      expectedRating,
-      expectedOpenFeedback,
-      expectedViews
+    // --- DEBUG: confirm the handle is attached before we start polling ---
+    const isConnectedBeforeWait = await this.page.evaluate(
+      (el: Element) => document.contains(el),
+      card
     );
+    console.log(
+      `[DEBUG] index=${index} card connected to DOM before wait: ${isConnectedBeforeWait}`
+    );
+    // --- END DEBUG ---
+
+    try {
+      await this.page.waitForFunction(
+        (
+          cardElement: Element,
+          ratingSelector: string,
+          feedbackSelector: string,
+          viewsSelector: string,
+          expectedRatingText: string,
+          expectedFeedbackText: string,
+          expectedViewsText: string
+        ) => {
+          const getStatisticText = (selector: string): string => {
+            return (
+              (
+                cardElement.querySelector(selector) as HTMLElement | null
+              )?.textContent?.trim() || ''
+            );
+          };
+
+          const connected = document.contains(cardElement);
+          const rating = getStatisticText(ratingSelector);
+          const feedback = getStatisticText(feedbackSelector);
+          const views = getStatisticText(viewsSelector);
+
+          // --- DEBUG: logs every poll tick, visible via page.on('console') ---
+          console.log(
+            `[POLL] connected=${connected} rating="${rating}" feedback="${feedback}" views="${views}"`
+          );
+          // --- END DEBUG ---
+
+          return (
+            rating === expectedRatingText &&
+            feedback === expectedFeedbackText &&
+            views === expectedViewsText
+          );
+        },
+        {},
+        card,
+        explorationGridRatingSelector,
+        explorationGridFeedbackSelector,
+        explorationGridViewsSelector,
+        expectedRating,
+        expectedOpenFeedback,
+        expectedViews
+      );
+    } catch (error) {
+      // --- DEBUG: dump final state on timeout, before the generic error below ---
+      const finalConnected = await this.page.evaluate(
+        (el: Element) => document.contains(el),
+        card
+      );
+      const finalState = finalConnected
+        ? await this.page.evaluate(
+            (
+              cardElement: Element,
+              ratingSelector: string,
+              feedbackSelector: string,
+              viewsSelector: string
+            ) => {
+              const getStatisticText = (selector: string): string =>
+                (
+                  cardElement.querySelector(selector) as HTMLElement | null
+                )?.textContent?.trim() || '';
+              return {
+                rating: getStatisticText(ratingSelector),
+                feedback: getStatisticText(feedbackSelector),
+                views: getStatisticText(viewsSelector),
+              };
+            },
+            card,
+            explorationGridRatingSelector,
+            explorationGridFeedbackSelector,
+            explorationGridViewsSelector
+          )
+        : null;
+      console.log(
+        `[DEBUG] waitForFunction timed out. index=${index} connected=${finalConnected} finalState=${JSON.stringify(finalState)}`
+      );
+      // --- END DEBUG ---
+      throw error;
+    }
 
     const cardDetails = await this.page.evaluate(
       (

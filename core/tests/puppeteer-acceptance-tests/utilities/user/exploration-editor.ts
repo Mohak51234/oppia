@@ -8127,19 +8127,6 @@ export class ExplorationEditor extends BaseUser {
       this.page.on('console', msg => {
         console.log('[BROWSER]', msg.text());
       });
-
-      this.page.on('response', async response => {
-        if (response.url().includes('creatordashboardhandler/data')) {
-          try {
-            const body = await response.text();
-            console.log(
-              `[NETWORK] ${response.url()} status=${response.status()} body=${body}`
-            );
-          } catch (e) {
-            console.log(`[NETWORK] failed to read body: ${e}`);
-          }
-        }
-      });
     }
     // --- END DEBUG INSTRUMENTATION SETUP ---
 

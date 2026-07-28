@@ -177,6 +177,7 @@ const solutionFloatTextField =
   'oppia-add-or-update-solution-modal .e2e-test-float-form-input';
 const textStateEditSelector = 'div.e2e-test-state-edit-content';
 const saveContentButton = 'button.e2e-test-save-state-content';
+const addQuestionButton = 'button.e2e-test-create-question-button';
 const createQuestionButton = 'div.e2e-test-create-question';
 const addInteractionButton = 'button.e2e-test-open-add-interaction-modal';
 const interactionNumberInputButton =
@@ -1009,6 +1010,7 @@ export class CurriculumAdmin extends TopicManager {
       await this.expectElementToBeVisible(skillQuestionTab);
       await this.clickAndWaitForNavigation(skillQuestionTab, true);
     }
+    await this.expectElementToBeVisible(addQuestionButton);
   }
 
   /**

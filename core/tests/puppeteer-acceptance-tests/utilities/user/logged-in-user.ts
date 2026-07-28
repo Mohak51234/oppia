@@ -755,7 +755,28 @@ export class LoggedInUser extends BaseUser {
    * @param {string} explorationId - The ID of the exploration to play.
    */
   async playExploration(explorationId: string | null): Promise<void> {
+    const explorationCompletedResponsePromise = this.page.waitForResponse(
+      response =>
+        response
+          .url()
+          .includes(
+            `/explorehandler/exploration_complete_event/${explorationId}`
+          ) && response.status() === 200
+    );
+    const statsEventsResponsePromise = this.page.waitForResponse(
+      response =>
+        response
+          .url()
+          .includes(`/explorehandler/stats_events/${explorationId}`) &&
+        response.status() === 200
+    );
+
     await this.goto(`${baseUrl}/explore/${explorationId as string}`);
+
+    await Promise.all([
+      explorationCompletedResponsePromise,
+      statsEventsResponsePromise,
+    ]);
   }
 
   /**

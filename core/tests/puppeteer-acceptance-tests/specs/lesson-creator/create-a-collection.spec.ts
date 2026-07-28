@@ -80,15 +80,11 @@ describe('LC.12 Visit Creator Dashboard', function () {
 
     await learner.playExploration(negativeNumbersExplorationId);
 
-    await learner.waitForPageToFullyLoad();
-
     await learner.rateExploration(5, 'Great Lesson', false);
 
     await learner.returnToLibraryFromExplorationCompletion();
 
     await learner.playExploration(positiveNumbersExplorationId);
-
-    await learner.waitForPageToFullyLoad();
 
     await learner.rateExploration(3, '', false);
 
@@ -114,18 +110,6 @@ describe('LC.12 Visit Creator Dashboard', function () {
   it(
     'should view explorations in grid view',
     async function () {
-      lessonCreator.page.on('response', async response => {
-        if (response.url().includes('creatordashboardhandler/data')) {
-          try {
-            const body = await response.text();
-            console.log(
-              `[NETWORK] ${response.url()} status=${response.status()} body=${body}`
-            );
-          } catch (e) {
-            console.log(`[NETWORK] failed to read body: ${e}`);
-          }
-        }
-      });
       await lessonCreator.reloadPage();
 
       await lessonCreator.waitForPageToFullyLoad();

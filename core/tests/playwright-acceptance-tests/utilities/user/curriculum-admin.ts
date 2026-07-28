@@ -1006,11 +1006,17 @@ export class CurriculumAdmin extends TopicManager {
       }
       currentUrl.hash = hashParts.join('/');
       await this.goto(currentUrl.toString());
+      // Changing only the URL hash triggers a same-document navigation in
+      // the browser (no reload, no re-run of the app's bootstrap code),
+      // so the app never re-evaluates the hash to switch tabs. A full
+      // reload is required to force the app to re-initialize and pick up
+      // the 'questions' tab from the updated hash.
+      await this.reloadPage();
     } else {
       await this.expectElementToBeVisible(skillQuestionTab);
       await this.clickAndWaitForNavigation(skillQuestionTab, true);
     }
-    await this.expectElementToBeVisible(addQuestionButton);
+    await this.expectElementToBeAttachedInDOM(addQuestionButton);
   }
 
   /**

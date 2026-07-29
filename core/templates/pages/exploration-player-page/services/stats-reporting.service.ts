@@ -119,6 +119,11 @@ export class StatsReportingService {
       return;
     }
 
+    console.log(
+      `[STATS-VERSION-CHECK] ${Date.now()} postStatsToBackend exp=${this.explorationId} ` +
+        `sending explorationVersion=${this.explorationVersion}`
+    );
+
     this.statsReportingBackendApiService
       .postsStatsAsync(
         this.aggregatedStats,
@@ -147,6 +152,10 @@ export class StatsReportingService {
     newSessionId: string,
     collectionId: string | null
   ): void {
+    console.log(
+      `[STATS-VERSION-CHECK] ${Date.now()} initSession exp=${newExplorationId} ` +
+        `explorationVersion=${newExplorationVersion}`
+    );
     this.explorationId = newExplorationId;
     this.explorationTitle = newExplorationTitle;
     this.explorationVersion = newExplorationVersion;

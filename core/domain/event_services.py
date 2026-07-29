@@ -31,13 +31,13 @@ from core.domain import (
 )
 from core.platform import models
 
-from typing import Any, Callable, Dict, Optional, Union
+from typing import Any, Callable, Dict, Optional, Union, Tuple
 
 MYPY = False
 if MYPY:  # pragma: no cover
     from mypy_imports import stats_models, transaction_services, user_models
 
-(stats_models, user_models) = models.Registry.import_models(
+stats_models, user_models = models.Registry.import_models(
     [models.Names.STATISTICS, models.Names.USER]
 )
 
@@ -87,12 +87,24 @@ class StatsEventsHandler(BaseEventHandler):
     EVENT_TYPE: str = feconf.EVENT_TYPE_ALL_STATS
 
     @classmethod
-    def _is_latest_version(cls, exp_id: str, exp_version: int) -> bool:
+    def _is_latest_version(
+        cls, exp_id: str, exp_version: int
+    ) -> Tuple[bool, int]:
         """Verifies whether the exploration version for the stats to be stored
         corresponds to the latest version of the exploration.
+
+        Returns:
+            tuple(bool, int). Whether exp_version is the latest version, and
+            the actual current version of the exploration.
         """
         exploration = exp_fetchers.get_exploration_by_id(exp_id)
-        return exploration.version == exp_version
+        is_latest = exploration.version == exp_version
+        logging.info(
+            '[STATS-VERSION-CHECK] exp=%s received_version=%s '
+            'actual_current_version=%s is_latest=%s'
+            % (exp_id, exp_version, exploration.version, is_latest)
+        )
+        return is_latest, exploration.version
 
     @classmethod
     def _handle_event(
@@ -101,16 +113,21 @@ class StatsEventsHandler(BaseEventHandler):
         exp_version: int,
         aggregated_stats: Dict[str, Dict[str, Union[int, str]]],
     ) -> None:
-        """Handle events for incremental update to analytics models using
-        aggregated stats data.
-        """
         if 'undefined' in aggregated_stats['state_stats_mapping']:
             logging.error(
                 'Aggregated stats contains an undefined state name: %s'
                 % list(aggregated_stats['state_stats_mapping'].keys())
             )
             return
-        if cls._is_latest_version(exploration_id, exp_version):
+
+        is_latest, actual_version = cls._is_latest_version(
+            exploration_id, exp_version
+        )
+        if is_latest:
+            logging.info(
+                '[STATS-VERSION-CHECK] exp=%s DEFERRING update_stats task'
+                % exploration_id
+            )
             taskqueue_services.defer(
                 feconf.FUNCTION_ID_TO_FUNCTION_NAME_FOR_DEFERRED_JOBS[
                     'FUNCTION_ID_UPDATE_STATS'
@@ -119,6 +136,12 @@ class StatsEventsHandler(BaseEventHandler):
                 exploration_id,
                 exp_version,
                 aggregated_stats,
+            )
+        else:
+            logging.warning(
+                '[STATS-VERSION-CHECK] exp=%s SKIPPED update_stats — '
+                'version mismatch (received=%s, actual=%s)'
+                % (exploration_id, exp_version, actual_version)
             )
 
 

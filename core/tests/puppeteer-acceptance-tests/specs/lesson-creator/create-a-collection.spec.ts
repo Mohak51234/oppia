@@ -44,46 +44,46 @@ describe('LC.12 Visit Creator Dashboard', function () {
   }, DEFAULT_TIMEOUT);
 
   it('should view contribution stats', async function () {
-    // --- DEBUG INSTRUMENTATION: remove once root cause is confirmed ---
-    const trackedUrlFragments = [
-      'exploration_start_event',
-      'stats_events',
-      'state_hit_event',
-      'explorehandler',
-    ];
-
-    const isTrackedUrl = (url: string): boolean =>
-      trackedUrlFragments.some(fragment => url.includes(fragment));
-
-    lessonCreator.page.on('request', request => {
-      if (isTrackedUrl(request.url())) {
-        console.log(`[REQUEST STARTED] ${request.method()} ${request.url()}`);
+    lessonCreator.page.on('response', async response => {
+      if (response.url().includes('creatordashboardhandler/data')) {
+        try {
+          const rawBody = await response.text();
+          const jsonBody = rawBody.replace(/^\)\]\}'\n/, ''); // strip XSSI prefix
+          if (!jsonBody.trim()) {
+            console.log(
+              `[DASHBOARD] ${Date.now()} empty body (likely preference-save ack)`
+            );
+            return;
+          }
+          const data = JSON.parse(jsonBody);
+          const summary = (data.explorations_list || []).map((exp: any) => ({
+            title: exp.title,
+            num_views: exp.num_views,
+            ratings: exp.ratings,
+          }));
+          console.log(
+            `[DASHBOARD] ${Date.now()} num_views summary: ${JSON.stringify(summary)}`
+          );
+        } catch (e) {
+          console.log(`[DASHBOARD] failed to parse response: ${e}`);
+        }
       }
     });
-
-    learner.page.on('request', request => {
-      if (isTrackedUrl(request.url())) {
-        console.log(`[REQUEST STARTED] ${request.method()} ${request.url()}`);
-      }
-    });
-
-    learner.page.on('requestfailed', request => {
-      if (isTrackedUrl(request.url())) {
-        console.log(
-          `[REQUEST FAILED] ${request.method()} ${request.url()} reason=${request.failure()?.errorText}`
-        );
-      }
-    });
-
     learner.page.on('requestfinished', async request => {
-      if (isTrackedUrl(request.url())) {
-        const response = request.response();
+      const url = request.url();
+      const statsEndpoints = [
+        'exploration_start_event',
+        'exploration_actual_start_event',
+        'stats_events',
+      ];
+      const match = statsEndpoints.find(ep => url.includes(ep));
+      if (match) {
+        const expId = url.split('/').pop();
         console.log(
-          `[REQUEST FINISHED] ${request.method()} ${request.url()} status=${response?.status()}`
+          `[STATS-EVENT] ${Date.now()} ${match} resolved for exp=${expId} status=${request.response()?.status()}`
         );
       }
     });
-    // --- END DEBUG INSTRUMENTATION ---
     await lessonCreator.navigateToCreatorDashboardUsingProfileDropdown();
     await lessonCreator.expectCreatorDashboardMessageToBe(
       "It looks like you haven't created any explorations yet. Let's get started!"

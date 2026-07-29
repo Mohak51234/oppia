@@ -8120,107 +8120,95 @@ export class ExplorationEditor extends BaseUser {
     expectedOpenFeedback: string,
     expectedViews: string
   ): Promise<void> {
-    await this.waitForNetworkIdle({idleTime: 1000});
+    const maxWaitTimeMsec = 60000;
+    const pollIntervalMsec = 3000;
+    const startTime = Date.now();
 
-    await this.page.waitForSelector(explorationGridCardTitleSelector, {
-      visible: true,
-    });
+    let lastSeenDetails: {
+      rating: string;
+      feedback: string;
+      views: string;
+    } | null = null;
 
-    const titles = await this.page.$$(explorationGridCardTitleSelector);
-    const titleElement = titles[index];
+    while (Date.now() - startTime < maxWaitTimeMsec) {
+      await this.waitForNetworkIdle({idleTime: 1000});
 
-    if (!titleElement) {
-      throw new Error(`Card at index ${index} not found.`);
-    }
+      await this.page.waitForSelector(explorationGridCardTitleSelector, {
+        visible: true,
+      });
 
-    const cardHandle = await titleElement.evaluateHandle(
-      (element, cardSelector) => element.closest(cardSelector),
-      explorationGridSelector
-    );
-    const card = cardHandle.asElement();
+      const titles = await this.page.$$(explorationGridCardTitleSelector);
+      const titleElement = titles[index];
 
-    if (!card) {
-      throw new Error(`Card at index ${index} not found.`);
-    }
+      if (!titleElement) {
+        throw new Error(`Card at index ${index} not found.`);
+      }
 
-    await this.page.waitForFunction(
-      (
-        cardElement: Element,
-        ratingSelector: string,
-        feedbackSelector: string,
-        viewsSelector: string,
-        expectedRatingText: string,
-        expectedFeedbackText: string,
-        expectedViewsText: string
-      ) => {
-        const getStatisticText = (selector: string): string => {
-          return (
-            (
-              cardElement.querySelector(selector) as HTMLElement | null
-            )?.textContent?.trim() || ''
-          );
-        };
-
-        return (
-          getStatisticText(ratingSelector) === expectedRatingText &&
-          getStatisticText(feedbackSelector) === expectedFeedbackText &&
-          getStatisticText(viewsSelector) === expectedViewsText
-        );
-      },
-      {},
-      card,
-      explorationGridRatingSelector,
-      explorationGridFeedbackSelector,
-      explorationGridViewsSelector,
-      expectedRating,
-      expectedOpenFeedback,
-      expectedViews
-    );
-
-    const cardDetails = await this.page.evaluate(
-      (
-        cardElement: Element,
-        ratingSelector: string,
-        feedbackSelector: string,
-        viewsSelector: string
-      ) => {
-        const getStatisticText = (selector: string): string => {
-          return (
-            (
-              cardElement.querySelector(selector) as HTMLElement | null
-            )?.textContent?.trim() || ''
-          );
-        };
-
-        return {
-          rating: getStatisticText(ratingSelector),
-          feedback: getStatisticText(feedbackSelector),
-          views: getStatisticText(viewsSelector),
-        };
-      },
-      card,
-      explorationGridRatingSelector,
-      explorationGridFeedbackSelector,
-      explorationGridViewsSelector
-    );
-
-    if (cardDetails.rating !== expectedRating) {
-      throw new Error(
-        `Expected rating "${expectedRating}" but found "${cardDetails.rating}".`
+      const cardHandle = await titleElement.evaluateHandle(
+        (element, cardSelector) => element.closest(cardSelector),
+        explorationGridSelector
       );
+      const card = cardHandle.asElement();
+
+      if (!card) {
+        throw new Error(`Card at index ${index} not found.`);
+      }
+
+      const cardDetails = await this.page.evaluate(
+        (
+          cardElement: Element,
+          ratingSelector: string,
+          feedbackSelector: string,
+          viewsSelector: string
+        ) => {
+          const getStatisticText = (selector: string): string => {
+            return (
+              (
+                cardElement.querySelector(selector) as HTMLElement | null
+              )?.textContent?.trim() || ''
+            );
+          };
+
+          return {
+            rating: getStatisticText(ratingSelector),
+            feedback: getStatisticText(feedbackSelector),
+            views: getStatisticText(viewsSelector),
+          };
+        },
+        card,
+        explorationGridRatingSelector,
+        explorationGridFeedbackSelector,
+        explorationGridViewsSelector
+      );
+
+      lastSeenDetails = cardDetails;
+
+      if (
+        cardDetails.rating === expectedRating &&
+        cardDetails.feedback === expectedOpenFeedback &&
+        cardDetails.views === expectedViews
+      ) {
+        return;
+      }
+
+      // The counts didn't match yet. num_views is computed live from
+      // ExplorationStatsModel.num_starts on every creatordashboardhandler
+      // request, but that model is updated by a deferred backend task that
+      // isn't guaranteed to have completed yet. There's no client-observable
+      // signal for when it finishes, so wait, reload to force a fresh read,
+      // and retry.
+      await this.page.waitForTimeout(pollIntervalMsec);
+      await this.reloadPage();
     }
 
-    if (cardDetails.feedback !== expectedOpenFeedback) {
-      throw new Error(
-        `Expected open feedback "${expectedOpenFeedback}" but found "${cardDetails.feedback}".`
-      );
-    }
-
-    if (cardDetails.views !== expectedViews) {
-      throw new Error(
-        `Expected views "${expectedViews}" but found "${cardDetails.views}".`
-      );
-    }
+    throw new Error(
+      `Timed out after ${maxWaitTimeMsec}ms waiting for card at index ` +
+        `${index} to show rating "${expectedRating}", open feedback ` +
+        `"${expectedOpenFeedback}", views "${expectedViews}". ` +
+        `Last seen: rating="${lastSeenDetails?.rating}", ` +
+        `feedback="${lastSeenDetails?.feedback}", ` +
+        `views="${lastSeenDetails?.views}".`
+    );
   }
 
   /**

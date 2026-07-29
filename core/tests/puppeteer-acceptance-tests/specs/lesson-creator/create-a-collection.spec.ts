@@ -44,6 +44,46 @@ describe('LC.12 Visit Creator Dashboard', function () {
   }, DEFAULT_TIMEOUT);
 
   it('should view contribution stats', async function () {
+    // --- DEBUG INSTRUMENTATION: remove once root cause is confirmed ---
+    const trackedUrlFragments = [
+      'exploration_start_event',
+      'stats_events',
+      'state_hit_event',
+      'explorehandler',
+    ];
+
+    const isTrackedUrl = (url: string): boolean =>
+      trackedUrlFragments.some(fragment => url.includes(fragment));
+
+    lessonCreator.page.on('request', request => {
+      if (isTrackedUrl(request.url())) {
+        console.log(`[REQUEST STARTED] ${request.method()} ${request.url()}`);
+      }
+    });
+
+    learner.page.on('request', request => {
+      if (isTrackedUrl(request.url())) {
+        console.log(`[REQUEST STARTED] ${request.method()} ${request.url()}`);
+      }
+    });
+
+    learner.page.on('requestfailed', request => {
+      if (isTrackedUrl(request.url())) {
+        console.log(
+          `[REQUEST FAILED] ${request.method()} ${request.url()} reason=${request.failure()?.errorText}`
+        );
+      }
+    });
+
+    learner.page.on('requestfinished', async request => {
+      if (isTrackedUrl(request.url())) {
+        const response = request.response();
+        console.log(
+          `[REQUEST FINISHED] ${request.method()} ${request.url()} status=${response?.status()}`
+        );
+      }
+    });
+    // --- END DEBUG INSTRUMENTATION ---
     await lessonCreator.navigateToCreatorDashboardUsingProfileDropdown();
     await lessonCreator.expectCreatorDashboardMessageToBe(
       "It looks like you haven't created any explorations yet. Let's get started!"

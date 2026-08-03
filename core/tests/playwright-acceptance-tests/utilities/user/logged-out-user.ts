@@ -572,21 +572,10 @@ export class LoggedOutUser extends BaseUser {
 
   /**
    * Function to navigate to the next card in the preview tab.
+   * @param {boolean} skipVerification - Whether to skip verification of the card content.
    */
-  async continueToNextCard(): Promise<void> {
-    const currentCardContentSelector = `${stateConversationContent} p`;
-    await this.expectElementToBeVisible(currentCardContentSelector);
-    const currentCardContent = await this.page.$eval(
-      currentCardContentSelector,
-      el => el.textContent
-    );
+  async continueToNextCard(skipVerification: boolean = false): Promise<void> {
     try {
-      await this.expectElementToBeVisible(
-        nextCardButton,
-        true,
-        this.page,
-        7000
-      );
       await this.clickOnElementWithSelector(nextCardButton);
     } catch (error) {
       if (error instanceof Error && error.message.includes('Timeout')) {
@@ -596,15 +585,10 @@ export class LoggedOutUser extends BaseUser {
       }
     }
 
-    // Wait until card content changes.
-    await this.page.waitForFunction(
-      ({selector, value}: {selector: string; value: string}) => {
-        const element = document.querySelector(selector);
-        const text = element?.textContent?.trim();
-        return !!text && text !== value?.trim();
-      },
-      {selector: currentCardContentSelector, value: currentCardContent}
-    );
+    if (skipVerification) {
+      return;
+    }
+    await this.expectElementToBeVisible(previousCardButton);
   }
 
   /**

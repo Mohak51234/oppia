@@ -184,7 +184,8 @@ test.describe('Logged-Out Learner', function () {
   test('should be able to learn again on wrong answer', async function () {
     await loggedOutLearner.submitAnswer('2/9');
     await loggedOutLearner.expectNextCardButtonTextToBe('LEARN AGAIN');
-    await loggedOutLearner.continueToNextCard();
+    // Since this is the first card there is no back button, so the user can only continue to the next card.
+    await loggedOutLearner.continueToNextCard(true);
     await loggedOutLearner.expectCardContentToMatch(
       'Welcome, to the Place Values Exploration.'
     );

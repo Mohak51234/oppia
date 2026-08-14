@@ -5007,19 +5007,7 @@ export class ExplorationEditor extends BaseUser {
     try {
       await this.page.waitForFunction(
         (element: HTMLElement, value: string, matchCase: boolean) => {
-          const normalizedElementText = element.innerText
-            .replace(/\s+/g, ' ')
-            .trim();
-          const normalizedExpectedText = value.replace(/\s+/g, ' ').trim();
-
-          if (matchCase) {
-            return normalizedElementText === normalizedExpectedText;
-          }
-
-          return (
-            normalizedElementText.toLowerCase() ===
-            normalizedExpectedText.toLowerCase()
-          );
+          return (element.innerText.trim() === value.trim()) === matchCase;
         },
         {},
         element,

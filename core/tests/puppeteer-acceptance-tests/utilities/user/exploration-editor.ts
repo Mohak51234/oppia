@@ -5007,7 +5007,10 @@ export class ExplorationEditor extends BaseUser {
     try {
       await this.page.waitForFunction(
         (element: HTMLElement, value: string, matchCase: boolean) => {
-          return (element.innerText.trim() === value.trim()) === matchCase;
+          const normalize = (s: string) => s.trim().replace(/\n+/g, '\n');
+          return (
+            (normalize(element.innerText) === normalize(value)) === matchCase
+          );
         },
         {},
         element,

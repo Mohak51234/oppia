@@ -31,7 +31,7 @@ const loginPageUrl = testConstants.URLs.Login;
 const signUpEmailField = testConstants.SignInDetails.inputField;
 const siteAdminPageUrl = testConstants.URLs.AdminPage;
 const splashPageUrl = testConstants.URLs.splash;
-
+const takeQuizButtonSelector = '.e2e-test-take-diagnostic-test';
 // Auth Pages selectors.
 const loginPage = '.e2e-test-login-page';
 const signUpUsernameField = 'input.e2e-test-username-input';
@@ -261,6 +261,16 @@ export class LoggedInUser extends BaseUser {
     }
 
     await this.expectElementToBeVisible(removeModalContainerSelector, false);
+  }
+
+  /**
+   * Clicks on the take quiz button in the classroom page.
+   */
+  async clickOnTakeQuizButtonInClassroomPage(): Promise<void> {
+    await this.expectElementToBeVisible(takeQuizButtonSelector);
+
+    await this.clickOnElementWithSelector(takeQuizButtonSelector);
+    await this.expectElementToBeVisible(takeQuizButtonSelector, false);
   }
 
   /**

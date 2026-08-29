@@ -16,7 +16,7 @@
  * @fileoverview Utility functions for the Exploration Editor page.
  */
 
-import {Page, ElementHandle} from '@playwright/test';
+import {Page, ElementHandle, expect} from '@playwright/test';
 import {BaseUser} from '../common/playwright-utils';
 import testConstants from '../common/test-constants';
 import {showMessage} from '../common/show-message';
@@ -29,8 +29,14 @@ import {StateEditorUtils} from '../common/state-editor-utils';
 const creatorDashboardPage = testConstants.URLs.CreatorDashboard;
 const baseUrl = testConstants.URLs.BaseURL;
 
+const creatorDashboardContainerSelector =
+  '.e2e-test-creator-dashboard-container';
 const createExplorationButtonSelector =
   'button.e2e-test-create-new-exploration-button';
+const emptyCreatorDashboardMessageSelector = '.oppia-dashboard-empty-text p';
+const explorationGridSelector = '.e2e-test-exploration-dashboard-card';
+const explorationGridCardTitleSelector =
+  '.e2e-test-exploration-dashboard-card .e2e-test-exp-summary-tile-title';
 const saveContentButton = 'button.e2e-test-save-state-content';
 const addInteractionButton = 'button.e2e-test-open-add-interaction-modal';
 const customizeInteractionBodySelector = '.e2e-test-customize-interaction-body';
@@ -100,6 +106,8 @@ const mobileOptionsButtonSelector = 'i.e2e-test-mobile-options';
 const tagsField = '.e2e-test-chip-list-tags';
 const errorSavingExplorationModal = '.e2e-test-discard-lost-changes-button';
 
+const profileDropdown = '.e2e-test-profile-dropdown';
+const creatorDashboardMenuLink = '.e2e-test-creator-dashboard-link';
 const multipleChoiceResponseDropdown =
   'mat-select.e2e-test-main-html-select-selector';
 const multipleChoiceResponseOption = 'mat-option.e2e-test-html-select-selector';
@@ -110,6 +118,14 @@ const textInputInteractionOption =
   'tr[id^="e2e-test-schema-based-list-editor-table-row"]';
 const intEditorField = '.e2e-test-editor-int';
 
+const explorationListItemSelector = '.exploration-list-item';
+const explorationListRowTitleSelector = '.e2e-test-exp-summary-row-title';
+const listViewButtonSelector = '.e2e-test-oppia-list-view-btn';
+const explorationListSelector = '.oppia-dashboard-table';
+const explorationGridRatingSelector = '.e2e-test-exp-summary-tile-rating';
+const explorationGridFeedbackSelector =
+  '.e2e-test-exp-summary-tile-open-feedback';
+const explorationGridViewsSelector = '.e2e-test-exp-summary-tile-num-views';
 const feedbackEditorSelector = '.e2e-test-open-feedback-editor';
 const correctAnswerInTheGroupSelector = '.e2e-test-editor-correctness-toggle';
 const addNewResponseButton = 'button.e2e-test-add-new-response';
@@ -224,6 +240,18 @@ export class ExplorationEditor extends BaseUser {
   async navigateToCreatorDashboardPage(): Promise<void> {
     await this.goto(creatorDashboardPage);
     showMessage('Creator dashboard page is opened successfully.');
+  }
+
+  /**
+   * Navigates to creator dashboard using profile dropdown.
+   */
+  async navigateToCreatorDashboardUsingProfileDropdown(): Promise<void> {
+    await this.expectElementToBeVisible(profileDropdown);
+    await this.clickOnElementWithSelector(profileDropdown);
+
+    await this.expectElementToBeVisible(creatorDashboardMenuLink);
+    await this.clickOnElementWithSelector(creatorDashboardMenuLink);
+    await this.waitForCreatorDashboardToLoad();
   }
 
   /**
@@ -1474,6 +1502,7 @@ export class ExplorationEditor extends BaseUser {
    * regardless of the download directory configuration.
    * @param {number} explorationVersion - The version of the exploration to download.
    * @param {boolean} isExplorationPublished - Whether the exploration is published.
+   * @param {string} [explorationTitle] - The title of the exploration (used for filename verification).
    */
   async downloadExploration(
     explorationVersion: number,
@@ -1553,6 +1582,161 @@ export class ExplorationEditor extends BaseUser {
   }
 
   /**
+   * Utility to verify the empty-dashboard message on the Creator Dashboard.
+   * @param {string} expectedText - The expected message text.
+   */
+  async expectCreatorDashboardMessageToBe(expectedText: string): Promise<void> {
+    await this.expectTextContentToBe(
+      emptyCreatorDashboardMessageSelector,
+      expectedText
+    );
+  }
+
+  /**
+   * Expects explorations displayed in the grid to match the provided order.
+   * @param {string[]} expectedTitles - Ordered list of expected exploration titles.
+   */
+  async expectExplorationsInGridInOrder(
+    expectedTitles: string[]
+  ): Promise<void> {
+    await this.expectElementToBeVisible(explorationGridSelector, true);
+
+    const titles = await this.page.$$eval(
+      explorationGridCardTitleSelector,
+      elements => elements.map(el => (el as HTMLElement).innerText.trim())
+    );
+
+    if (titles.length !== expectedTitles.length) {
+      throw new Error(
+        `Expected ${expectedTitles.length} explorations, ` +
+          `but found ${titles.length}.`
+      );
+    }
+
+    for (let i = 0; i < expectedTitles.length; i++) {
+      if (titles[i] !== expectedTitles[i]) {
+        throw new Error(
+          `Expected exploration "${expectedTitles[i]}" ` +
+            `at position ${i}, but found "${titles[i]}".`
+        );
+      }
+    }
+  }
+
+  /**
+   * Expects explorations displayed in the list to match the provided order.
+   * @param {string[]} expectedTitles - Ordered list of expected exploration titles.
+   */
+  async expectExplorationsInListInOrder(
+    expectedTitles: string[]
+  ): Promise<void> {
+    await this.expectElementToBeVisible(explorationListSelector, true);
+
+    const titles = await this.page.$$eval(
+      explorationListRowTitleSelector,
+      elements => elements.map(el => (el as HTMLElement).innerText.trim())
+    );
+
+    if (titles.length !== expectedTitles.length) {
+      throw new Error(
+        `Expected ${expectedTitles.length} explorations, ` +
+          `but found ${titles.length}.`
+      );
+    }
+
+    for (let i = 0; i < expectedTitles.length; i++) {
+      if (titles[i] !== expectedTitles[i]) {
+        throw new Error(
+          `Expected exploration "${expectedTitles[i]}" ` +
+            `at position ${i}, but found "${titles[i]}".`
+        );
+      }
+    }
+  }
+
+  /**
+   * Expects the details of the exploration card at the given index in the grid to match the provided values.
+   * @param {number} index - The zero-based index of the card to check.
+   * @param {string} expectedRating - The expected rating text.
+   * @param {string} expectedOpenFeedback - The expected open feedback text.
+   * @param {string} expectedViews - The expected views text.
+   * @throws Will throw an error if the card at the given index is not found or if any of the details do not match the expected values.
+   */
+  async expectGridCardDetailsToBe(
+    index: number,
+    expectedRating: string,
+    expectedOpenFeedback: string,
+    expectedViews: string
+  ): Promise<void> {
+    await this.expectElementToBeVisible(explorationGridCardTitleSelector);
+
+    const cards = this.page.locator(explorationGridSelector);
+    const card = cards.nth(index);
+
+    await expect(card).toBeVisible();
+
+    const cardCount = await cards.count();
+    if (index >= cardCount) {
+      throw new Error(`Card at index ${index} not found.`);
+    }
+
+    await expect(
+      card.locator(explorationGridRatingSelector),
+      `Expected rating "${expectedRating}" for card at index ${index}.`
+    ).toHaveText(expectedRating);
+
+    await expect(
+      card.locator(explorationGridFeedbackSelector),
+      `Expected open feedback "${expectedOpenFeedback}" for card at index ${index}.`
+    ).toHaveText(expectedOpenFeedback);
+
+    await expect(
+      card.locator(explorationGridViewsSelector),
+      `Expected views "${expectedViews}" for card at index ${index}.`
+    ).toHaveText(expectedViews);
+  }
+
+  /**
+   * Expects the details of the exploration card at the given index in the list to match the provided values.
+   * @param {number} index - The zero-based index of the card to check.
+   * @param {string} expectedRating - The expected rating text.
+   * @param {string} expectedOpenThreads - The expected open threads text.
+   * @param {string} expectedPlays - The expected plays text.
+   * @throws Will throw an error if the card at the given index is not found or if any of the details do not match the expected values.
+   */
+  async expectListDetailsToBe(
+    index: number,
+    expectedRating: string,
+    expectedOpenThreads: string,
+    expectedPlays: string
+  ): Promise<void> {
+    const rows = this.page.locator(explorationListItemSelector);
+    const row = rows.nth(index);
+
+    await expect(row).toBeVisible();
+
+    const rowCount = await rows.count();
+    if (index >= rowCount) {
+      throw new Error(`Row at index ${index} not found.`);
+    }
+
+    await expect(
+      row.locator('td:nth-child(2)'),
+      `Expected rating "${expectedRating}" for row at index ${index}.`
+    ).toHaveText(expectedRating);
+
+    await expect(
+      row.locator('td:nth-child(3)'),
+      `Expected plays "${expectedPlays}" for row at index ${index}.`
+    ).toHaveText(expectedPlays);
+
+    await expect(
+      row.locator('td:nth-child(4)'),
+      `Expected open threads "${expectedOpenThreads}" for row at index ${index}.`
+    ).toHaveText(expectedOpenThreads);
+  }
+
+  /**
    * Function to check the expected total number of plays.
    * @param {number} number - The expected total play count.
    */
@@ -1620,7 +1804,7 @@ export class ExplorationEditor extends BaseUser {
    * @param {number} subscriberCount - The expected number of subscribers.
    */
   async expectNumberOfSubscribersToBe(subscriberCount: number): Promise<void> {
-    await this.expectElementToBeVisible(subscriberCountLabel);
+    await this.expectElementToBeAttachedInDOM(subscriberCountLabel);
     const currentSubscriberCount = await this.page.$eval(
       subscriberCountLabel,
       element => element.textContent?.trim() || '0'
@@ -1735,6 +1919,48 @@ export class ExplorationEditor extends BaseUser {
           `but found ${totalUsers} instead.`
       );
     }
+  }
+
+  /**
+   * Switches the exploration editor to list view.
+   */
+  async switchToListView(): Promise<void> {
+    await this.expectElementToBeVisible(listViewButtonSelector, true);
+
+    // If list is already visible and grid is hidden, we can pass.
+    const listVisibleInitially = await this.isElementVisible(
+      explorationListSelector,
+      true,
+      500
+    );
+    const gridVisibleInitially = await this.isElementVisible(
+      explorationGridSelector,
+      true,
+      500
+    );
+
+    if (listVisibleInitially && !gridVisibleInitially) {
+      return;
+    }
+
+    await this.clickOnElementWithSelector(listViewButtonSelector);
+
+    // Wait until the list container is visible and the grid container is hidden.
+    await this.page
+      .locator(explorationListSelector)
+      .waitFor({state: 'visible'});
+    await this.page.locator(explorationGridSelector).waitFor({state: 'hidden'});
+  }
+
+  /**
+   * Waits for the creator dashboard content to finish loading.
+   */
+  async waitForCreatorDashboardToLoad(): Promise<void> {
+    await this.expectElementToBeVisible(
+      creatorDashboardContainerSelector,
+      true
+    );
+    await this.waitForPageToFullyLoad();
   }
 }
 

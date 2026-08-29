@@ -65,6 +65,7 @@ const bioSelector = '.oppia-user-bio-text';
 const subjectInterestSelector = '.e2e-test-profile-interest';
 const subscribeButton = 'button.oppia-subscription-button';
 const unsubscribeLabel = '.e2e-test-unsubscribe-label';
+const contributorProfileLink = '.e2e-test-contributor-icon';
 
 const angularRootElementSelector = 'oppia-angular-root';
 const homeTabSectionInLearnerDashboard = '.e2e-test-learner-dash-home-tab';
@@ -181,6 +182,7 @@ const lessonCardContainer = '.goal-list-story-nodes';
 const learnerGreetingsSelector = '.e2e-test-learner-greetings';
 
 // Common > Remove modal selectors.
+const cancelButtonSelector = '.e2e-test-exploration-feedback-close-button';
 const removeModalContainerSelector =
   '.e2e-test-remove-activity-modal-container';
 const removeModalHeaderSelector =
@@ -2079,6 +2081,30 @@ export class LoggedInUser extends BaseUser {
   }
 
   /**
+   * Opens the rating prompt by clicking a star, then cancels it without
+   * submitting any feedback.
+   * @param {number} rating - The star to click before cancelling.
+   */
+  async rateExplorationAndCancelFeedback(rating: number): Promise<void> {
+    try {
+      await this.expectElementToBeVisible(ratingsHeaderSelector);
+      const ratingStars = await this.page.$$(ratingStarSelector);
+      await this.clickOnElement(ratingStars[rating - 1]);
+
+      // Feedback prompt should now be open; cancel instead of submitting.
+      await this.clickOnElementWithSelector(cancelButtonSelector);
+
+      await this.expectElementToBeVisible(feedbackTextareaSelector, false);
+    } catch (error) {
+      const newError = new Error(
+        `Failed to cancel exploration rating feedback: ${error}`
+      );
+      newError.stack = (error as Error).stack;
+      throw newError;
+    }
+  }
+
+  /**
    * This function is used to report an exploration. It clicks on the report button,
    * opens the report modal, selects an issue, types a description, and submits the report.
    * @param {string} issueDescription - The description of the issue.
@@ -2541,6 +2567,20 @@ export class LoggedInUser extends BaseUser {
       newError.stack = (error as Error).stack;
       throw newError;
     }
+  }
+
+  /**
+   * Navigates to the creator's profile page from the lesson info modal.
+   */
+
+  async visitCreatorProfileFromLessonInfoModal(): Promise<void> {
+    await this.expectElementToBeVisible(contributorProfileLink, true);
+
+    await this.clickOnElementWithSelector(contributorProfileLink);
+
+    await this.waitForPageToFullyLoad();
+    const expectedProfilePath: string = '/profile/';
+    await this.page.waitForURL(url => url.href.includes(expectedProfilePath));
   }
 }
 

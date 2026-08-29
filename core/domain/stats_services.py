@@ -22,7 +22,7 @@ import copy
 import itertools
 import logging
 import os
-from time import time
+import time
 
 from core import feconf, utils
 from core.domain import (

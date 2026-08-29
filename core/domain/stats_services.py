@@ -44,11 +44,13 @@ from typing import (
     overload,
 )
 
+from google.cloud import ndb
+
 MYPY = False
 if MYPY:  # pragma: no cover
     from core.domain import state_domain
     from mypy_imports import base_models, stats_models, transaction_services
-
+    from mypy_imports import datastore_services
 (
     base_models,
     stats_models,
@@ -56,6 +58,7 @@ if MYPY:  # pragma: no cover
     [models.Names.BASE_MODEL, models.Names.STATISTICS]
 )
 transaction_services = models.Registry.import_transaction_services()
+datastore_services = models.Registry.import_datastore_services()
 
 # NOTE TO DEVELOPERS: The functions:
 #   - get_visualizations_info()
@@ -314,7 +317,14 @@ def update_stats(
         aggregated_stats: dict. Dict representing an ExplorationStatsModel
             instance with stats aggregated in the frontend.
     """
-    _update_stats_transactional(exp_id, exp_version, aggregated_stats)
+    datastore_services.get_client().context()  # only if a context isn't already active — see note below
+
+    ndb.transaction(
+        lambda: _update_stats_transactional(
+            exp_id, exp_version, aggregated_stats
+        ),
+        retries=3,
+    )
 
 
 def get_stats_for_new_exploration(

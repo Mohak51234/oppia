@@ -21,6 +21,8 @@ from __future__ import annotations
 import copy
 import itertools
 import logging
+import os
+from time import time
 
 from core import feconf, utils
 from core.domain import (
@@ -249,6 +251,20 @@ def _update_stats_transactional(
         logging.exception('Aggregated stats validation failed: %s', e)
         return
 
+    # ---- ADD LOG #1 HERE ----
+    logging.error(
+        'STATS_DEBUG entry exp_id=%s version=%s pid=%s before_num_starts=%s '
+        'incoming_num_starts=%s time=%s'
+        % (
+            exp_id,
+            exp_version,
+            os.getpid(),
+            exp_stats.num_starts_v2,
+            aggregated_stats['num_starts'],
+            time.time(),
+        )
+    )
+
     exp_stats.num_starts_v2 += aggregated_stats['num_starts']
     exp_stats.num_completions_v2 += aggregated_stats['num_completions']
     exp_stats.num_actual_starts_v2 += aggregated_stats['num_actual_starts']
@@ -270,6 +286,18 @@ def _update_stats_transactional(
         )
 
     save_stats_model(exp_stats)
+
+    # ---- ADD LOG #2 HERE ----
+    logging.error(
+        'STATS_DEBUG exit exp_id=%s version=%s pid=%s after_num_starts=%s time=%s'
+        % (
+            exp_id,
+            exp_version,
+            os.getpid(),
+            exp_stats.num_starts_v2,
+            time.time(),
+        )
+    )
 
 
 def update_stats(
@@ -1031,6 +1059,22 @@ def save_stats_model(exploration_stats: stats_domain.ExplorationStats) -> None:
         exploration_stats.num_completions_v2
     )
     exploration_stats_model.state_stats_mapping = new_state_stats_mapping
+
+    # ---- ADD LOG HERE ----
+    logging.error(
+        'STATS_DEBUG save exp_id=%s version=%s pid=%s '
+        'freshly_fetched_num_starts=%s about_to_write_num_starts=%s time=%s'
+        % (
+            exploration_stats.exp_id,
+            exploration_stats.exp_version,
+            os.getpid(),
+            stats_models.ExplorationStatsModel.get_model(
+                exploration_stats.exp_id, exploration_stats.exp_version
+            ).num_starts_v2,
+            exploration_stats.num_starts_v2,
+            time.time(),
+        )
+    )
 
     exploration_stats_model.update_timestamps()
     exploration_stats_model.put()

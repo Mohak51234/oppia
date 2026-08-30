@@ -317,8 +317,6 @@ def update_stats(
         aggregated_stats: dict. Dict representing an ExplorationStatsModel
             instance with stats aggregated in the frontend.
     """
-    datastore_services.get_client().context()  # only if a context isn't already active — see note below
-
     ndb.transaction(
         lambda: _update_stats_transactional(
             exp_id, exp_version, aggregated_stats

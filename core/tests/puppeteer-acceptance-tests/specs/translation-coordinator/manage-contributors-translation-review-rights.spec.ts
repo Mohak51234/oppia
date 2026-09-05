@@ -163,6 +163,7 @@ describe('Translation Coordinator', function () {
     await translationCoordinator.addUsernameInUsernameInputModal(
       'translationReviewer1'
     );
+    await translationCoordinator.scrollToTopOfPage();
     await translationCoordinator.expectScreenshotToMatch(
       'addTranslationRightsModal',
       __dirname
